@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+guia_despliegue.md
 
 # Variables de entorno (contienen secretos) — NO subir al repo
 .env
