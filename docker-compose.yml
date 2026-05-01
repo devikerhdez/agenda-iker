@@ -1,0 +1,27 @@
+services:
+
+  backend:
+    build:
+      context: ./Backend
+    container_name: agenda-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./Backend/.env
+
+  frontend:
+    build:
+      context: ./Frontend
+      args:
+        # La URL de la API que el navegador usará para llamar al backend.
+        # Cámbiala a tu dominio cuando configures Nginx Proxy Manager.
+        # Ej: VITE_API_URL=https://api.agenda.tudominio.com/api
+        VITE_API_URL: ${VITE_API_URL:-http://212.227.227.231:8080/api}
+        VITE_VAPID_PUBLIC_KEY: ${VITE_VAPID_PUBLIC_KEY:-}
+    container_name: agenda-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend

@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"agenda-backend/db"
 	"agenda-backend/handlers"
@@ -52,9 +53,16 @@ func main() {
 	mux.HandleFunc("PUT /api/notas/{id}", handlers.UpdateNote)
 	mux.HandleFunc("DELETE /api/notas/{id}", handlers.DeleteNote)
 
-	// Configuración de CORS
+	// Configuración de CORS dinámica
+	// En local: ALLOWED_ORIGINS no está definido → usa fallback
+	// En producción: definir ALLOWED_ORIGINS=https://tudominio.com en el .env del servidor
+	allowedOrigins := []string{"http://localhost:5173", "http://127.0.0.1:5173"}
+	if origins := os.Getenv("ALLOWED_ORIGINS"); origins != "" {
+		allowedOrigins = strings.Split(origins, ",")
+	}
+
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://127.0.0.1:5173"},
+		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,

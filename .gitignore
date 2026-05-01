@@ -10,8 +10,17 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-.env*
+
+# Variables de entorno (contienen secretos) — NO subir al repo
+.env
+.env.local
+.env.production
+# Sí incluir los ejemplos de plantilla
+!.env.example
+
 *.local
+
+# Archivo de host con credenciales del servidor
 Host212.227.227.231.txt
 
 # Editor directories and files
@@ -24,4 +33,3 @@ Host212.227.227.231.txt
 *.njsproj
 *.sln
 *.sw?
-l

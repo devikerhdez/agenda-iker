@@ -1,0 +1,33 @@
+name: Deploy to IONOS VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: SSH Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /root/apps/agenda-iker
+
+            echo ">>> Pulling latest changes from main..."
+            git pull origin main
+
+            echo ">>> Rebuilding and restarting containers..."
+            docker compose up -d --build
+
+            echo ">>> Cleanup unused images..."
+            docker image prune -f
+
+            echo ">>> Deploy completed successfully!"
