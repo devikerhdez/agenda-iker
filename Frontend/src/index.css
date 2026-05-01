@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: var(--color-primary);
+  --color-accent: var(--color-accent);
+}
+
+@layer base {
+  :root {
+    --color-primary: #10b981;
+    --color-accent: #059669;
+    --bg-image: url('https://images.unsplash.com/photo-1526047932273-341f2a7631f9?q=80&w=2000&auto=format&fit=crop');
+    background-color: #0f172a;
+    color: #f8fafc;
+  }
+
+  /* TEMA CASINO - Poker Bar */
+  :root[data-theme='casino'] {
+    --color-primary: #10b981; /* Green */
+    --color-accent: #b45309;  /* Amber/Wood */
+    --bg-image: url('/assets/casino_bg.png');
+  }
+
+  /* TEMA FLORAL - Muted Pastel */
+  :root[data-theme='floral'] {
+    --color-primary: #be185d; /* Deeper Pink */
+    --color-accent: #fdf2f8;  /* Very Light Pink */
+    --bg-image: url('https://images.unsplash.com/photo-1526047932273-341f2a7631f9?q=80&w=2000&auto=format&fit=crop');
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-2xl;
+  }
+  
+  :root[data-theme='floral'] .glass-card {
+    @apply bg-white/90 backdrop-blur-xl border-white/80 text-slate-900 shadow-pink-200/30;
+  }
+
+  :root[data-theme='casino'] .glass-card {
+    @apply bg-black/70 backdrop-blur-md border-amber-900/40 shadow-black/80;
+  }
+}
+
+body {
+  background-image: var(--bg-image);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2); /* Darken a bit by default */
+  z-index: -1;
+}
+
+:root[data-theme='floral'] body::before {
+  background: rgba(255, 255, 255, 0.75); /* Much more muted/washed out */
+}
