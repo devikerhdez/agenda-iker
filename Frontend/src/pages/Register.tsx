@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { apiFetch } from '../lib/api';
 import { useSession } from '../hooks/useSession';
+import { saveSession } from '../lib/auth';
+import { requestPushPermission, subscribeToPushNotifications } from '../lib/push';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import type { Tema } from '../types';
-import { UserPlus, Spade, Flower2 } from 'lucide-react';
+import { UserPlus, Spade, Flower2, BellRing } from 'lucide-react';
 
 const themes: { id: Tema; label: string; description: string; icon: React.ReactNode; colorClass: string; bgImage: string }[] = [
   { 
@@ -34,6 +36,7 @@ export const Register: React.FC = () => {
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [tema, setTema] = useState<Tema>('casino');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,15 +50,31 @@ export const Register: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await apiFetch('/register', {
+      const response = await apiFetch('/register', {
         method: 'POST',
         body: JSON.stringify({ nombre, correo, password, tema })
       });
 
-      navigate('/login');
+      // Auto-login
+      saveSession({
+        id: response.id,
+        nombre: response.nombre,
+        tema: response.tema
+      });
+      document.documentElement.setAttribute('data-theme', response.tema);
+
+      // Handle push notifications setup
+      if (acceptTerms) {
+        const granted = await requestPushPermission();
+        if (granted) {
+          await subscribeToPushNotifications(response.id);
+        }
+      }
+
+      navigate('/dashboard');
     } catch (err: any) {
       console.error(err);
-      setError('Error al crear la cuenta');
+      setError('Error al crear la cuenta o correo ya en uso');
     } finally {
       setIsSubmitting(false);
     }
@@ -143,8 +162,29 @@ export const Register: React.FC = () => {
             </div>
           </div>
           
-          <div className="pt-2">
-            <Button type="submit" fullWidth disabled={isSubmitting}>
+          <div className="pt-2 border-t border-white/10 space-y-4 mt-2">
+            <label className="flex items-start gap-3 cursor-pointer group bg-slate-900/50 p-4 rounded-xl border border-slate-700 hover:border-primary/50 transition-colors">
+              <div className="pt-0.5">
+                <input
+                  type="checkbox"
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  required
+                  className="w-5 h-5 rounded border-slate-600 text-primary focus:ring-primary focus:ring-offset-slate-900 bg-slate-800 cursor-pointer"
+                />
+              </div>
+              <div className="flex-1 flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-200">Términos de Servicio y Notificaciones</span>
+                  <BellRing size={14} className={acceptTerms ? "text-primary" : "text-slate-500"} />
+                </div>
+                <span className="text-xs text-slate-400 leading-relaxed">
+                  Acepto los términos de servicio y deseo recibir notificaciones push en este dispositivo para que D'Agenda me avise de mis recordatorios.
+                </span>
+              </div>
+            </label>
+
+            <Button type="submit" fullWidth disabled={isSubmitting || !acceptTerms}>
               {isSubmitting ? 'Registrando...' : 'Registrarse'}
             </Button>
           </div>

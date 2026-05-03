@@ -144,31 +144,34 @@ export const Notes: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-900/10">
       {/* Navbar Minimalista */}
-      <nav className="glass-card bg-opacity-40! backdrop-blur-md sticky top-0 z-20 border-b border-white/10">
-        <div className="w-full px-4 h-14 flex items-center justify-between">
-          <button 
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 font-semibold hover:opacity-70 transition-opacity"
-          >
-            <ArrowLeft size={20} />
-            <span className="hidden sm:inline">Volver a Dashboard</span>
-          </button>
-          
-          <div className="flex items-center gap-4">
-            {isSaving && <span className="text-xs opacity-50 flex items-center gap-1"><Save size={12}/> Guardando...</span>}
+      <div className="sticky top-0 z-30">
+        <div className="h-[env(safe-area-inset-top)] bg-slate-950/80 backdrop-blur-md" />
+        <nav className="glass-card bg-opacity-40! backdrop-blur-md border-b border-white/10">
+          <div className="w-full px-4 h-14 flex items-center justify-between">
             <button 
-              onClick={handleCreateNote}
-              className="p-2 bg-primary/20 hover:bg-primary/40 text-primary rounded-xl transition-colors flex items-center gap-1"
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2 font-semibold hover:opacity-70 transition-opacity"
             >
-              <Plus size={18} />
-              <span className="text-sm font-bold hidden sm:inline">Nueva Nota</span>
+              <ArrowLeft size={20} />
+              <span className="hidden sm:inline">Volver a Dashboard</span>
             </button>
+            
+            <div className="flex items-center gap-4">
+              {isSaving && <span className="text-xs opacity-50 flex items-center gap-1"><Save size={12}/> Guardando...</span>}
+              <button 
+                onClick={handleCreateNote}
+                className="p-2 bg-primary/20 hover:bg-primary/40 text-primary rounded-xl transition-colors flex items-center gap-1"
+              >
+                <Plus size={18} />
+                <span className="text-sm font-bold hidden sm:inline">Nueva Nota</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      </div>
 
       {/* Main Layout: Sidebar + Editor */}
-      <main className="flex-1 flex overflow-hidden max-h-[calc(100vh-3.5rem)]">
+      <main className="flex-1 flex overflow-hidden max-h-[calc(100vh-3.5rem-env(safe-area-inset-top))]">
         
         {/* Sidebar */}
         <aside className={`w-full md:w-80 border-r border-white/10 flex flex-col glass-card rounded-none! border-y-0! border-l-0! ${selectedNote ? 'hidden md:flex' : 'flex'}`}>

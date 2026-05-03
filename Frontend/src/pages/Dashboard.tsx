@@ -169,32 +169,35 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <nav className="glass-card bg-opacity-20! backdrop-blur-md sticky top-0 z-20 border-b border-white/10 shadow-lg">
-        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-xl">
-            <CalendarIcon size={24} className="text-primary" />
-            <span>D'Agenda</span>
+      <div className="sticky top-0 z-30">
+        <div className="h-[env(safe-area-inset-top)] bg-slate-950/80 backdrop-blur-md" />
+        <nav className="glass-card bg-opacity-20! backdrop-blur-md border-b border-white/10 shadow-lg">
+          <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div className="flex items-center gap-2 font-bold text-xl">
+              <CalendarIcon size={24} className="text-primary" />
+              <span>D'Agenda</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="hidden sm:inline opacity-80">
+                ¡Hola, <span className="font-bold">{session.nombre}</span>! 👋
+              </span>
+              <button 
+                onClick={() => navigate('/notas')}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-sm font-bold rounded-xl transition-all border border-white/10"
+              >
+                Notas
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="opacity-60 hover:opacity-100 transition-opacity p-2 rounded-xl bg-white/10"
+                title="Cerrar sesión"
+              >
+                <LogOut size={20} />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="hidden sm:inline opacity-80">
-              ¡Hola, <span className="font-bold">{session.nombre}</span>! 👋
-            </span>
-            <button 
-              onClick={() => navigate('/notas')}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-sm font-bold rounded-xl transition-all border border-white/10"
-            >
-              Notas
-            </button>
-            <button 
-              onClick={handleLogout}
-              className="opacity-60 hover:opacity-100 transition-opacity p-2 rounded-xl bg-white/10"
-              title="Cerrar sesión"
-            >
-              <LogOut size={20} />
-            </button>
-          </div>
-        </div>
-      </nav>
+        </nav>
+      </div>
 
       <main className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 w-full flex-1">
         <div className="lg:col-span-8 space-y-6">

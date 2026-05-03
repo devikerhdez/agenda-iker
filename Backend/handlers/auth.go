@@ -41,10 +41,11 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Insertar usuario
-	_, err = db.Pool.Exec(context.Background(), `
+	var newID string
+	err = db.Pool.QueryRow(context.Background(), `
 		INSERT INTO agenda_app.usuarios (nombre, correo, password_hash, tema)
-		VALUES ($1, $2, $3, $4)
-	`, req.Nombre, req.Correo, string(hashedPw), req.Tema)
+		VALUES ($1, $2, $3, $4) RETURNING id
+	`, req.Nombre, req.Correo, string(hashedPw), req.Tema).Scan(&newID)
 
 	if err != nil {
 		http.Error(w, "Error al crear la cuenta", http.StatusInternalServerError)
@@ -52,7 +53,12 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Usuario registrado exitosamente"})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Usuario registrado exitosamente",
+		"id":      newID,
+		"nombre":  req.Nombre,
+		"tema":    req.Tema,
+	})
 }
 
 type LoginRequest struct {
