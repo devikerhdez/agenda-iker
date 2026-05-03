@@ -16,7 +16,8 @@ export default defineConfig({
         name: 'Agenda Iker',
         short_name: 'Agenda',
         description: 'Mi Agenda Personal',
-        theme_color: '#ffffff',
+        theme_color: '#0f172a',
+        background_color: '#0f172a',
         icons: [
           {
             src: 'assets/Logo_app_agenda.png',

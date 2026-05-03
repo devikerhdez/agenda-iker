@@ -213,54 +213,62 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({ onSubmit, isLoading 
         </label>
 
         {quiereNotificacion && (
-          <div className="space-y-4 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+          <div className="space-y-4 bg-slate-900/50 p-3 sm:p-4 rounded-xl border border-slate-800">
             {notificaciones.map((notif, index) => (
-              <div key={index} className="flex flex-col sm:flex-row gap-3 items-end">
-                <div className="flex-1 w-full flex flex-col gap-1.5">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-slate-300">Notificación {index + 1}</label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+              <div key={index} className="relative flex flex-col gap-4 p-4 bg-slate-800/20 rounded-xl border border-slate-700/30">
+                {notificaciones.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveNotificacion(index)}
+                    className="absolute top-2 right-2 p-2 text-rose-400/70 hover:text-rose-400 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+                
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-semibold text-slate-200">Notificación {index + 1}</label>
+                    <label className="flex items-center gap-2 cursor-pointer mt-1">
                       <input
                         type="checkbox"
                         checked={notif.misma_hora}
                         onChange={(e) => handleChangeNotificacion(index, 'misma_hora', e.target.checked)}
                         className="w-4 h-4 rounded border-slate-600 text-primary focus:ring-primary focus:ring-offset-slate-900 bg-slate-800"
                       />
-                      <span className="text-xs text-slate-300">Recibir en el mismo momento</span>
+                      <span className="text-xs text-slate-400">Recibir en el mismo momento que el recordatorio</span>
                     </label>
                   </div>
-                  {!notif.misma_hora && (
-                    <input
-                      type={esRecurrente ? "time" : "datetime-local"}
-                      value={esRecurrente && notif.fecha_hora.includes('T') ? notif.fecha_hora.split('T')[1].substring(0, 5) : notif.fecha_hora}
-                      onChange={(e) => handleChangeNotificacion(index, 'fecha_hora', e.target.value)}
-                      onClick={(e) => (e.target as HTMLInputElement).showPicker()}
-                      required={quiereNotificacion && !notif.misma_hora}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900/50 px-4 py-[9px] text-sm text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary transition-all mt-1"
-                    />
-                  )}
+
+                  <div className="grid grid-cols-1 gap-3">
+                    {!notif.misma_hora && (
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[11px] uppercase tracking-wider font-bold text-slate-500">Fecha y Hora</label>
+                        <input
+                          type={esRecurrente ? "time" : "datetime-local"}
+                          value={esRecurrente && notif.fecha_hora.includes('T') ? notif.fecha_hora.split('T')[1].substring(0, 5) : notif.fecha_hora}
+                          onChange={(e) => handleChangeNotificacion(index, 'fecha_hora', e.target.value)}
+                          onClick={(e) => (e.target as HTMLInputElement).showPicker()}
+                          required={quiereNotificacion && !notif.misma_hora}
+                          className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-slate-100 focus:ring-2 focus:ring-primary transition-all"
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] uppercase tracking-wider font-bold text-slate-500">Medio de aviso</label>
+                      <select
+                        value={notif.tipo}
+                        onChange={(e) => handleChangeNotificacion(index, 'tipo', e.target.value as any)}
+                        className="w-full rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2 text-sm text-slate-100 focus:ring-2 focus:ring-primary transition-all appearance-none"
+                      >
+                        <option value="email">Email</option>
+                        <option value="movil">Móvil (Push)</option>
+                        <option value="ambas">Ambas</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 w-full flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-slate-300">Medio</label>
-                  <select
-                    value={notif.tipo}
-                    onChange={(e) => handleChangeNotificacion(index, 'tipo', e.target.value as any)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-900/50 px-4 py-[9px] text-sm text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                  >
-                    <option value="email">Email</option>
-                    <option value="movil">Móvil (Push)</option>
-                    <option value="ambas">Ambas</option>
-                  </select>
-                </div>
-                {notificaciones.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveNotificacion(index)}
-                    className="p-2 mb-0.5 text-rose-400 hover:text-rose-300 hover:bg-rose-400/10 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                )}
               </div>
             ))}
             
