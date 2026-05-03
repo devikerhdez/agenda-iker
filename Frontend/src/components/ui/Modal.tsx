@@ -31,8 +31,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
       />
       
       {/* Modal Content */}
-      <div className="relative w-full max-w-md transform rounded-2xl bg-slate-900 border border-slate-800 p-6 text-left align-middle shadow-xl transition-all">
-        <div className="flex items-center justify-between mb-5">
+      <div className="relative w-full max-w-md transform rounded-2xl bg-slate-900 border border-slate-800 p-6 text-left align-middle shadow-xl transition-all max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between mb-5 flex-shrink-0">
           <h3 className="text-xl font-semibold leading-6 text-slate-100">
             {title}
           </h3>
@@ -44,7 +44,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
           </button>
         </div>
         
-        <div className="mt-2">
+        <div className="mt-2 overflow-y-auto overflow-x-hidden flex-1 -mr-2 pr-2 custom-scrollbar">
           {children}
         </div>
       </div>

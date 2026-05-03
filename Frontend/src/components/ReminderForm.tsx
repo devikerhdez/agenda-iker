@@ -10,6 +10,8 @@ interface ReminderFormProps {
     descripcion: string; 
     fecha_hora: string; 
     prioridad: Prioridad;
+    es_recurrente?: boolean;
+    dias_repeticion?: number[];
     notificaciones?: Notificacion[];
   }) => void;
   isLoading?: boolean;
@@ -21,10 +23,33 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({ onSubmit, isLoading 
   const [fechaHora, setFechaHora] = useState('');
   const [prioridad, setPrioridad] = useState<Prioridad>('media');
   
+  type FormNotif = Notificacion & { misma_hora?: boolean };
+  
   const [quiereNotificacion, setQuiereNotificacion] = useState(false);
-  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([
-    { fecha_hora: '', tipo: 'email' }
+  const [notificaciones, setNotificaciones] = useState<FormNotif[]>([
+    { fecha_hora: '', tipo: 'email', misma_hora: false }
   ]);
+
+  const [esRecurrente, setEsRecurrente] = useState(false);
+  const [diasRepeticion, setDiasRepeticion] = useState<number[]>([]);
+
+  const toggleDia = (dia: number) => {
+    if (diasRepeticion.includes(dia)) {
+      setDiasRepeticion(diasRepeticion.filter(d => d !== dia));
+    } else {
+      setDiasRepeticion([...diasRepeticion, dia]);
+    }
+  };
+
+  const diasSemana = [
+    { label: 'L', value: 1 },
+    { label: 'M', value: 2 },
+    { label: 'X', value: 3 },
+    { label: 'J', value: 4 },
+    { label: 'V', value: 5 },
+    { label: 'S', value: 6 },
+    { label: 'D', value: 0 }
+  ];
 
   const handleAddNotificacion = () => {
     setNotificaciones([...notificaciones, { fecha_hora: '', tipo: 'email' }]);
@@ -34,7 +59,7 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({ onSubmit, isLoading 
     setNotificaciones(notificaciones.filter((_, i) => i !== index));
   };
 
-  const handleChangeNotificacion = (index: number, field: keyof Notificacion, value: string) => {
+  const handleChangeNotificacion = (index: number, field: keyof FormNotif, value: any) => {
     const newNotifs = [...notificaciones];
     newNotifs[index] = { ...newNotifs[index], [field]: value };
     setNotificaciones(newNotifs);
@@ -44,22 +69,39 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({ onSubmit, isLoading 
     e.preventDefault();
     if (!titulo.trim() || !fechaHora) return;
 
-    // Validate notifications if checked
+    // Resolver fechaHora
+    let finalFechaHora = fechaHora;
+    if (esRecurrente && fechaHora.length <= 5) {
+      const today = new Date().toISOString().split('T')[0];
+      finalFechaHora = `${today}T${fechaHora}`;
+    }
+
     let notifsToSubmit: Notificacion[] = [];
     if (quiereNotificacion) {
       notifsToSubmit = notificaciones
-        .filter(n => n.fecha_hora) // Only valid dates
-        .map(n => ({
-          ...n,
-          fecha_hora: new Date(n.fecha_hora).toISOString()
-        }));
+        .filter(n => n.fecha_hora || n.misma_hora)
+        .map(n => {
+          let computed = n.fecha_hora;
+          if (n.misma_hora) {
+            computed = finalFechaHora;
+          } else if (esRecurrente && computed.length <= 5) {
+            const today = new Date().toISOString().split('T')[0];
+            computed = `${today}T${computed}`;
+          }
+          return {
+            tipo: n.tipo,
+            fecha_hora: new Date(computed).toISOString()
+          };
+        });
     }
 
     onSubmit({
       titulo: titulo.trim(),
       descripcion: descripcion.trim(),
-      fecha_hora: new Date(fechaHora).toISOString(),
+      fecha_hora: new Date(finalFechaHora).toISOString(),
       prioridad,
+      es_recurrente: esRecurrente,
+      dias_repeticion: esRecurrente ? diasRepeticion : [],
       notificaciones: notifsToSubmit.length > 0 ? notifsToSubmit : undefined
     });
   };
@@ -84,13 +126,58 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({ onSubmit, isLoading 
         />
       </div>
 
-      <Input
-        label="Fecha y Hora"
-        type="datetime-local"
-        value={fechaHora}
-        onChange={(e) => setFechaHora(e.target.value)}
-        required
-      />
+      <div className="p-4 bg-slate-900/30 rounded-xl border border-slate-800 space-y-4">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-slate-300">
+            {esRecurrente ? 'Hora (Base del ciclo)' : 'Fecha y Hora (Base del recordatorio)'}
+          </label>
+          <input
+            type={esRecurrente ? "time" : "datetime-local"}
+            value={esRecurrente && fechaHora.includes('T') ? fechaHora.split('T')[1].substring(0, 5) : fechaHora}
+            onChange={(e) => setFechaHora(e.target.value)}
+            onClick={(e) => (e.target as HTMLInputElement).showPicker()}
+            required
+            className="w-full rounded-xl border border-slate-700 bg-slate-900/50 px-4 py-[9px] text-sm text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+          />
+        </div>
+
+        <div className="pt-2 border-t border-slate-800">
+          <label className="flex items-center gap-2 cursor-pointer mb-2">
+            <input
+              type="checkbox"
+              checked={esRecurrente}
+              onChange={(e) => setEsRecurrente(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-600 text-primary focus:ring-primary focus:ring-offset-slate-900 bg-slate-800"
+            />
+            <span className="text-sm font-medium text-slate-200">¿Repetir este recordatorio (Ciclo semanal)?</span>
+          </label>
+
+          {esRecurrente && (
+            <div className="space-y-3 mt-3 animate-in fade-in slide-in-from-top-2">
+              <label className="text-sm font-medium text-slate-400">Selecciona los días para generar instancias semanales automáticamente:</label>
+              <div className="flex flex-wrap gap-2">
+                {diasSemana.map(dia => (
+                  <button
+                    key={dia.value}
+                    type="button"
+                    onClick={() => toggleDia(dia.value)}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                      diasRepeticion.includes(dia.value)
+                        ? 'bg-primary text-slate-900 shadow-lg shadow-primary/30 scale-110'
+                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                    }`}
+                  >
+                    {dia.label}
+                  </button>
+                ))}
+              </div>
+              {diasRepeticion.length === 0 && (
+                <p className="text-xs text-rose-400 mt-1">Selecciona al menos un día para repetir</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-slate-300">Prioridad</label>
@@ -111,6 +198,7 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({ onSubmit, isLoading 
           ))}
         </div>
       </div>
+      {/* Notifications Section */}
 
       {/* Notifications Section */}
       <div className="pt-2 border-t border-slate-800">
@@ -128,14 +216,29 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({ onSubmit, isLoading 
           <div className="space-y-4 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
             {notificaciones.map((notif, index) => (
               <div key={index} className="flex flex-col sm:flex-row gap-3 items-end">
-                <div className="flex-1 w-full">
-                  <Input
-                    label={`Notificación ${index + 1} - Fecha y Hora`}
-                    type="datetime-local"
-                    value={notif.fecha_hora}
-                    onChange={(e) => handleChangeNotificacion(index, 'fecha_hora', e.target.value)}
-                    required={quiereNotificacion}
-                  />
+                <div className="flex-1 w-full flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-300">Notificación {index + 1}</label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={notif.misma_hora}
+                        onChange={(e) => handleChangeNotificacion(index, 'misma_hora', e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-600 text-primary focus:ring-primary focus:ring-offset-slate-900 bg-slate-800"
+                      />
+                      <span className="text-xs text-slate-300">Recibir en el mismo momento</span>
+                    </label>
+                  </div>
+                  {!notif.misma_hora && (
+                    <input
+                      type={esRecurrente ? "time" : "datetime-local"}
+                      value={esRecurrente && notif.fecha_hora.includes('T') ? notif.fecha_hora.split('T')[1].substring(0, 5) : notif.fecha_hora}
+                      onChange={(e) => handleChangeNotificacion(index, 'fecha_hora', e.target.value)}
+                      onClick={(e) => (e.target as HTMLInputElement).showPicker()}
+                      required={quiereNotificacion && !notif.misma_hora}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900/50 px-4 py-[9px] text-sm text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary transition-all mt-1"
+                    />
+                  )}
                 </div>
                 <div className="flex-1 w-full flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-slate-300">Medio</label>
@@ -175,7 +278,7 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({ onSubmit, isLoading 
       </div>
 
       <div className="pt-4">
-        <Button type="submit" fullWidth disabled={isLoading || !titulo || !fechaHora}>
+        <Button type="submit" fullWidth disabled={isLoading || !titulo || !fechaHora || (esRecurrente && diasRepeticion.length === 0)}>
           {isLoading ? 'Guardando...' : 'Crear Recordatorio'}
         </Button>
       </div>

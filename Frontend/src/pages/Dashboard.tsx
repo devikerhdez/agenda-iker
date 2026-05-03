@@ -22,7 +22,7 @@ export const Dashboard: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [viewMode, setViewMode] = useState<'all' | 'pending' | 'completed'>('all');
+  const [viewMode, setViewMode] = useState<'all' | 'pending' | 'completed' | 'cycles'>('all');
   
   // Selección múltiple (Gmail style)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -55,7 +55,7 @@ export const Dashboard: React.FC = () => {
     navigate('/login');
   };
 
-  const handleCreateReminder = async (data: { titulo: string; descripcion: string; fecha_hora: string; prioridad: Prioridad; notificaciones?: any[] }) => {
+  const handleCreateReminder = async (data: { titulo: string; descripcion: string; fecha_hora: string; prioridad: Prioridad; es_recurrente?: boolean; dias_repeticion?: number[]; notificaciones?: any[] }) => {
     setIsSubmitting(true);
     try {
       await apiFetch('/reminders', {
@@ -141,14 +141,16 @@ export const Dashboard: React.FC = () => {
   if (loading) return null;
   if (!session) return <Navigate to="/login" replace />;
 
-  const pendingReminders = reminders.filter(r => !r.completado);
-  const completedReminders = reminders.filter(r => r.completado);
+  const pendingReminders = reminders.filter(r => !r.es_recurrente && !r.completado);
+  const completedReminders = reminders.filter(r => !r.es_recurrente && r.completado);
+  const cycleReminders = reminders.filter(r => r.es_recurrente);
   
-  let baseReminders = reminders;
+  let baseReminders = reminders.filter(r => !r.es_recurrente); // default for 'all'
   if (viewMode === 'pending') baseReminders = pendingReminders;
   if (viewMode === 'completed') baseReminders = completedReminders;
+  if (viewMode === 'cycles') baseReminders = cycleReminders;
 
-  const displayedReminders = selectedDate 
+  const displayedReminders = selectedDate && viewMode !== 'cycles'
     ? baseReminders.filter(r => isSameDay(new Date(r.fecha_hora), selectedDate))
     : baseReminders;
 
@@ -220,6 +222,14 @@ export const Dashboard: React.FC = () => {
               >
                 {selectedDate ? 'Ver todos' : 'Ver hoy'}
               </Button>
+              <Button 
+                variant="primary" 
+                size="sm" 
+                onClick={() => setViewMode('cycles')}
+                className={viewMode === 'cycles' ? 'shadow-lg shadow-primary/30 ring-2 ring-white/20' : 'opacity-80'}
+              >
+                Ver ciclos
+              </Button>
               <Button onClick={() => setIsModalOpen(true)} size="sm">
                 <Plus size={18} className="mr-1" />
                 Nuevo
@@ -271,7 +281,7 @@ export const Dashboard: React.FC = () => {
               sortedDates.map(dateKey => (
                 <div key={dateKey} className="space-y-3">
                   <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 bg-white/80 dark:bg-slate-900/80 px-4 py-2 rounded-xl border border-white/20 w-fit sticky top-20 z-10 shadow-sm">
-                    {dateKey}
+                    {viewMode === 'cycles' ? 'Ciclos de Repetición' : dateKey}
                   </h3>
                   <div className="space-y-3">
                     {groupedReminders[dateKey].map(reminder => (

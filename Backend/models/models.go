@@ -16,9 +16,12 @@ type Recordatorio struct {
 	Titulo      string    `json:"titulo"`
 	Descripcion *string   `json:"descripcion"`
 	FechaHora   time.Time `json:"fecha_hora"`
-	Prioridad   string    `json:"prioridad"`
+	Prioridad      string         `json:"prioridad"`
 	Completado     bool           `json:"completado"`
 	CreatedAt      time.Time      `json:"created_at"`
+	EsRecurrente   bool           `json:"es_recurrente"`
+	DiasRepeticion []int          `json:"dias_repeticion"`
+	CicloID        *string        `json:"ciclo_id,omitempty"`
 	Notificaciones []Notificacion `json:"notificaciones,omitempty"`
 }
 

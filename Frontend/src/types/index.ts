@@ -27,6 +27,9 @@ export interface Recordatorio {
   prioridad: Prioridad;
   completado: boolean;
   creado_en: string; // ISO string
+  es_recurrente?: boolean;
+  dias_repeticion?: number[];
+  ciclo_id?: string | null;
   notificaciones?: Notificacion[];
 }
 

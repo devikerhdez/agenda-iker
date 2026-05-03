@@ -1,65 +1,72 @@
-🚀 Instrucciones de Configuración: Despliegue Automatizado (Go + Docker)
-Este documento contiene los requerimientos técnicos para configurar el VPS de IONOS y permitir un flujo de trabajo basado en GitHub Actions (Push-to-Deploy).
+1. Backend (Go)
+En Go, la librería estándar para esto es SherClockHolmes/webpush-go.
 
-1. Información del Servidor
-IP del Servidor: 212.227.227.231
+Estructura de la Suscripción
+Primero, define cómo recibirás la suscripción desde React:
 
-Sistema Operativo: Ubuntu 24.04 LTS
+Go
+type PushSubscription struct {
+    Endpoint string `json:"endpoint"`
+    Keys     struct {
+        P256dh string `json:"p256dh"`
+        Auth   string `json:"auth"`
+    } `json:"keys"`
+}
+Envío de Notificación
+Tu agente debe implementar una función similar a esta para disparar el mensaje:
 
-Usuario: root
+Go
+import "github.com/SherClockHolmes/webpush-go"
 
-2. Preparación del Entorno (Stack Tecnológico)
-Por favor, realiza las siguientes instalaciones y configuraciones:
+func SendNotification(sub PushSubscription, message string) {
+    // Estas son las claves VAPID que generes
+    const vapidPublicKey = "..."
+    const vapidPrivateKey = "..."
 
-Docker & Docker Compose: Instalar el motor de Docker y el plugin de Compose para gestionar las apps de forma aislada.
+    s := &webpush.Subscription{
+        Endpoint: sub.Endpoint,
+        Keys: webpush.Keys{
+            P256dh: sub.Keys.P256dh,
+            Auth:   sub.Keys.Auth,
+        },
+    }
 
-Firewall (UFW): Configurar reglas para permitir tráfico en los puertos:
+    resp, err := webpush.SendNotification([]byte(message), s, &webpush.Options{
+        Subscriber:       "mailto:tu@email.com", // Obligatorio para identificar el emisor
+        VAPIDPublicKey:   vapidPublicKey,
+        VAPIDPrivateKey:  vapidPrivateKey,
+        TTL:              30,
+    })
+    // Manejar error y cerrar resp.Body
+}
+2. Frontend (React + TS)
+Hook de Suscripción
+Crea un custom hook o una utilidad para gestionar el registro del Service Worker y la obtención del token.
 
-22/tcp (SSH)
+TypeScript
+// usePushNotifications.ts
+export const subscribeUser = async () => {
+  const registration = await navigator.serviceWorker.ready;
+  
+  // Convertir tu clave pública VAPID de base64 a Uint8Array
+  const convertedVapidKey = urlBase64ToUint8Array(process.env.REACT_APP_VAPID_PUBLIC_KEY!);
 
-80/tcp (HTTP)
+  const subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: convertedVapidKey
+  });
 
-443/tcp (HTTPS)
+  // Enviar a tu backend en Go
+  await axios.post('/api/notifications/subscribe', subscription);
+};
+3. Archivo .md para tu Agente
+He actualizado el documento anterior integrando específicamente Go y TypeScript. Pásale este archivo a tu agente para que genere el código exacto:
 
-81/tcp (Admin de Nginx Proxy Manager)
+[file-tag: guia_pwa_go_react_ts.md]
 
-3. Gestión de Proxy y SSL
-Levantar un contenedor de Nginx Proxy Manager.
+Puntos clave para tu Agente:
+Seguridad: Recuérdale que no guarde las claves VAPID en el código, sino en variables de entorno (.env).
 
-Propósito: Permitir al usuario mapear dominios a contenedores Docker y gestionar certificados SSL (Let's Encrypt) de forma visual.
+Base de Datos: El agente debe crear una tabla (SQL) o colección (NoSQL) para guardar las PushSubscription asociadas al ID de cada usuario.
 
-Acceso: Configurar el panel de administración en el puerto 81.
-
-4. Estructura de Aplicaciones
-Organizar el despliegue en la ruta /root/apps/:
-
-backend/: Código fuente del repositorio de Go.
-
-frontend/: Archivos estáticos o contenedor de Node.js según corresponda.
-
-5. Configuración de CI/CD (GitHub Actions)
-El usuario ya ha configurado una Deploy Key pública en el repositorio de GitHub.
-
-Acción requerida: Configurar un Workflow de GitHub Actions que, ante un push en la rama main, realice lo siguiente:
-
-Conexión vía SSH al servidor.
-
-git pull de los últimos cambios.
-
-docker compose up -d --build.
-
-Secretos: El agente deberá solicitar al usuario el contenido de la SSH Private Key (~/.ssh/id_rsa) para configurarlo en los Secrets del repositorio como SSH_PRIVATE_KEY.
-
-6. Dockerización del Backend (Go)
-Para el proyecto de Go, se requiere un Dockerfile optimizado (multi-stage build) que:
-
-Compile en una imagen golang:alpine.
-
-Ejecute el binario en una imagen alpine mínima para ahorrar recursos del VPS M+ (4GB RAM).
-
-¿Qué debe hacer el usuario después?
-Una vez que el agente confirme la configuración, el usuario solo tendrá que:
-
-Añadir la Private Key proporcionada por el servidor en los Secrets de su GitHub.
-
-Realizar un git push para ver su aplicación desplegada automáticamente.
+Tipado: En React, debe extender la interfaz Window o usar los tipos de lib.dom.d.ts para que navigator.serviceWorker no de errores de compilación.

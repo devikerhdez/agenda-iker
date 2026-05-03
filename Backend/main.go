@@ -30,6 +30,8 @@ func main() {
 
 	// Iniciar worker de notificaciones
 	worker.StartNotifier()
+	// Iniciar worker de generación de ciclos
+	worker.StartGenerator()
 
 	mux := http.NewServeMux()
 
