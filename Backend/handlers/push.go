@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"agenda-backend/db"
@@ -29,6 +30,7 @@ func SubscribePush(w http.ResponseWriter, r *http.Request) {
 	`, req.UsuarioID, req.Subscription.Endpoint, req.Subscription.P256dh, req.Subscription.Auth)
 
 	if err != nil {
+		log.Printf("Error insertando suscripción en DB: %v", err)
 		http.Error(w, "Error guardando suscripción", http.StatusInternalServerError)
 		return
 	}

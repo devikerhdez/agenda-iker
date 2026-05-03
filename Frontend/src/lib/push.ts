@@ -13,30 +13,46 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   return outputArray.buffer as ArrayBuffer;
 }
 
+// Wraps navigator.serviceWorker.ready with a timeout so it never hangs forever
+function swReady(timeoutMs = 8000): Promise<ServiceWorkerRegistration> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('[Push] Service Worker no estuvo listo en ' + timeoutMs + 'ms'));
+    }, timeoutMs);
+
+    navigator.serviceWorker.ready.then((reg) => {
+      clearTimeout(timer);
+      resolve(reg);
+    }).catch(reject);
+  });
+}
+
 export async function requestPushPermission(): Promise<boolean> {
   if (!('Notification' in window)) return false;
   if (Notification.permission === 'granted') return true;
-  if (Notification.permission === 'denied') return false;
+  if (Notification.permission === 'denied') {
+    console.warn('[Push] Permiso denegado por el usuario anteriormente.');
+    return false;
+  }
   const permission = await Notification.requestPermission();
   return permission === 'granted';
 }
 
-export async function subscribeToPushNotifications(userId: string): Promise<void> {
+export async function subscribeToPushNotifications(userId: string): Promise<boolean> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    console.warn('[Push] No soportado por el navegador.');
-    return;
+    console.warn('[Push] No soportado por este navegador.');
+    return false;
   }
   if (!VAPID_PUBLIC_KEY) {
-    console.warn('[Push] VITE_VAPID_PUBLIC_KEY no está definida en .env');
-    return;
+    console.error('[Push] VITE_VAPID_PUBLIC_KEY no está definida en .env');
+    return false;
   }
 
   try {
-    // Wait for the SW controlled by Vite-PWA to be ready
-    const registration = await navigator.serviceWorker.ready;
-    console.log('[Push] Service worker listo:', registration.scope);
+    console.log('[Push] Esperando Service Worker...');
+    const registration = await swReady();
+    console.log('[Push] SW listo:', registration.scope);
 
-    // Check for an existing subscription first
     let subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) {
@@ -45,15 +61,16 @@ export async function subscribeToPushNotifications(userId: string): Promise<void
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
+      console.log('[Push] Suscripción creada:', subscription.endpoint.substring(0, 60) + '...');
     } else {
-      console.log('[Push] Suscripción push ya existía, re-enviando al backend...');
+      console.log('[Push] Reutilizando suscripción existente.');
     }
 
     const subJSON = subscription.toJSON();
 
     if (!subJSON.keys?.p256dh || !subJSON.keys?.auth) {
-      console.error('[Push] La suscripción no tiene claves. Algo falló al crearla.');
-      return;
+      console.error('[Push] La suscripción no contiene claves. Abortando.');
+      return false;
     }
 
     const payload = {
@@ -65,13 +82,16 @@ export async function subscribeToPushNotifications(userId: string): Promise<void
       },
     };
 
+    console.log('[Push] Enviando suscripción al backend para userId:', userId);
     await apiFetch('/push-subscription', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
 
-    console.log('[Push] ✅ Suscripción enviada al backend correctamente.');
+    console.log('[Push] ✅ Suscripción guardada en el servidor correctamente.');
+    return true;
   } catch (error) {
-    console.error('[Push] ❌ Error al suscribirse a notificaciones push:', error);
+    console.error('[Push] ❌ Error:', error);
+    return false;
   }
 }

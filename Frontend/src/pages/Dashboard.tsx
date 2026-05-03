@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { LogOut, Plus, Calendar as CalendarIcon, ListTodo } from 'lucide-react';
+import { LogOut, Plus, Calendar as CalendarIcon, ListTodo, BellOff, BellRing } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 import { clearSession } from '../lib/auth';
 import { apiFetch } from '../lib/api';
@@ -27,16 +27,29 @@ export const Dashboard: React.FC = () => {
   // Selección múltiple (Gmail style)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [pushStatus, setPushStatus] = useState<'idle' | 'loading' | 'ok' | 'denied'>('idle');
+
+  const handleSubscribePush = async () => {
+    if (!session?.id) return;
+    setPushStatus('loading');
+    const granted = await requestPushPermission();
+    if (!granted) {
+      setPushStatus('denied');
+      return;
+    }
+    const ok = await subscribeToPushNotifications(session.id);
+    setPushStatus(ok ? 'ok' : 'idle');
+  };
 
   useEffect(() => {
     if (session) {
       loadReminders();
-      // Solicitar permisos e intentar suscribirse al Web Push
-      requestPushPermission().then(granted => {
-        if (granted) {
-          subscribeToPushNotifications(session.id);
-        }
-      });
+      // Intentar suscripción automática si ya tiene permiso
+      if (Notification.permission === 'granted') {
+        subscribeToPushNotifications(session.id).then(ok => {
+          if (ok) setPushStatus('ok');
+        });
+      }
     }
   }, [session]);
 
@@ -177,7 +190,7 @@ export const Dashboard: React.FC = () => {
               <CalendarIcon size={24} className="text-primary" />
               <span>D'Agenda</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <span className="hidden sm:inline opacity-80">
                 ¡Hola, <span className="font-bold">{session.nombre}</span>! 👋
               </span>
@@ -186,6 +199,28 @@ export const Dashboard: React.FC = () => {
                 className="px-4 py-2 bg-white/10 hover:bg-white/20 text-sm font-bold rounded-xl transition-all border border-white/10"
               >
                 Notas
+              </button>
+              {/* Push Notification Bell */}
+              <button
+                onClick={handleSubscribePush}
+                disabled={pushStatus === 'loading'}
+                title={
+                  pushStatus === 'ok' ? 'Notificaciones activas' :
+                  pushStatus === 'denied' ? 'Permiso denegado — actívalo en ajustes del navegador' :
+                  'Activar notificaciones push'
+                }
+                className={`p-2 rounded-xl transition-all border ${
+                  pushStatus === 'ok'
+                    ? 'bg-primary/20 border-primary/40 text-primary'
+                    : pushStatus === 'denied'
+                    ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                    : 'bg-white/10 border-white/10 opacity-60 hover:opacity-100'
+                }`}
+              >
+                {pushStatus === 'denied'
+                  ? <BellOff size={18} />
+                  : <BellRing size={18} className={pushStatus === 'loading' ? 'animate-pulse' : ''} />
+                }
               </button>
               <button 
                 onClick={handleLogout}
