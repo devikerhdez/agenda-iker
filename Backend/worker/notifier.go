@@ -78,13 +78,38 @@ func sendEmail(to string, titulo string, descripcion string) {
 		return
 	}
 
-	auth := smtp.PlainAuth("", user, pass, "smtp.gmail.com")
-	
-	msg := []byte(fmt.Sprintf("To: %s\r\n"+
-		"Subject: Recordatorio: %s\r\n"+
-		"\r\n"+
-		"%s\r\n", to, titulo, descripcion))
+	bodyText := descripcion
+	if bodyText == "" {
+		bodyText = "No hay descripción adicional."
+	}
 
+	htmlBody := fmt.Sprintf(`
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; background-color: #0f172a; color: #f1f5f9; padding: 24px;">
+  <div style="max-width: 480px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 32px; border: 1px solid #334155;">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
+      <span style="font-size: 28px;">🔔</span>
+      <span style="font-size: 22px; font-weight: bold; color: #10b981;">D'Agenda</span>
+    </div>
+    <h2 style="color: #f8fafc; font-size: 20px; margin: 0 0 8px 0;">%s</h2>
+    <p style="color: #94a3b8; font-size: 15px; margin: 0 0 24px 0; line-height: 1.6;">%s</p>
+    <hr style="border: none; border-top: 1px solid #334155; margin: 0 0 20px 0;">
+    <p style="color: #475569; font-size: 12px; margin: 0;">Este recordatorio fue enviado automáticamente por tu Agenda Personal.</p>
+  </div>
+</body>
+</html>
+`, titulo, bodyText)
+
+	fromHeader := fmt.Sprintf("From: D'Agenda <%s>\r\n", user)
+	toHeader := fmt.Sprintf("To: %s\r\n", to)
+	subjectHeader := fmt.Sprintf("Subject: =?UTF-8?Q?Recordatorio:_%s?=\r\n", titulo)
+	mimeHeaders := "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\n"
+
+	msg := []byte(fromHeader + toHeader + subjectHeader + mimeHeaders + "\r\n" + htmlBody)
+
+	auth := smtp.PlainAuth("", user, pass, "smtp.gmail.com")
 	err := smtp.SendMail("smtp.gmail.com:587", auth, user, []string{to}, msg)
 	if err != nil {
 		log.Printf("Error enviando email a %s: %v", to, err)

@@ -2,16 +2,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { registerSW } from 'virtual:pwa-register'
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').then((registration) => {
-      console.log('Service Worker registrado:', registration.scope);
-    }).catch((error) => {
-      console.error('Error registrando Service Worker:', error);
-    });
-  });
-}
+// Register the Vite-PWA service worker (handles push events + precaching)
+registerSW({ immediate: true })
+
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
